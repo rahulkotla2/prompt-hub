@@ -1,0 +1,6 @@
+{
+  "name": "Prompt Hub",
+  "description": "A futuristic glassmorphism prompt manager with dynamic variables, smart tagging, and global command palette.",
+  "requestFramePermissions": ["clipboard-read", "clipboard-write"],
+  "majorCapabilities": []
+}
