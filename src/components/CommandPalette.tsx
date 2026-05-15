@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Command } from 'cmdk';
 import { Search, Star } from 'lucide-react';
 import { Prompt } from '../types';
@@ -12,6 +12,33 @@ type CommandPaletteProps = {
 };
 
 export function CommandPalette({ open, setOpen, prompts, onSelectPrompt }: CommandPaletteProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  useEffect(() => {
+    if (!open) {
+      setSearchTerm('');
+      setDebouncedSearch('');
+    }
+  }, [open]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const filteredPrompts = prompts.filter(prompt => {
+    if (!debouncedSearch) return true;
+    const searchLower = debouncedSearch.toLowerCase();
+    return (
+      prompt.title.toLowerCase().includes(searchLower) ||
+      prompt.content.toLowerCase().includes(searchLower) ||
+      prompt.tags.some(tag => tag.toLowerCase().includes(searchLower))
+    );
+  });
+
   if (!open) return null;
 
   return (
@@ -19,12 +46,14 @@ export function CommandPalette({ open, setOpen, prompts, onSelectPrompt }: Comma
       <div className="fixed inset-0" onClick={() => setOpen(false)}></div>
       <Command 
         className="w-full max-w-xl bg-white dark:bg-[#111111] border border-black/10 dark:border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col text-gray-900 dark:text-white relative z-10 animate-in fade-in zoom-in-95 duration-100 max-h-[85vh]"
-        shouldFilter={true}
+        shouldFilter={false}
       >
         <div className="flex items-center px-4 border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
           <Search className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 dark:text-white/40 shrink-0" />
           <Command.Input 
             autoFocus
+            value={searchTerm}
+            onValueChange={setSearchTerm}
             placeholder="Search prompts by title, content, or tag..." 
             className="flex-1 bg-transparent py-3 px-3 sm:p-4 text-gray-900 dark:text-white placeholder-white/40 focus:outline-none text-sm sm:text-[15px] font-medium" 
           />
@@ -36,12 +65,12 @@ export function CommandPalette({ open, setOpen, prompts, onSelectPrompt }: Comma
             <p className="text-gray-600 dark:text-white/60 text-sm font-medium">No prompts found.</p>
             <p className="text-gray-500 dark:text-white/40 text-[10px] sm:text-xs text-balance">Try searching for a different keyword or create a new prompt.</p>
           </Command.Empty>
-          {prompts.map(prompt => (
+          {filteredPrompts.map(prompt => (
             <Command.Item 
               key={prompt.id} 
-              value={`${prompt.title} ${prompt.content} ${prompt.tags.join(' ')}`}
+              value={prompt.id}
               onSelect={() => { onSelectPrompt(prompt); setOpen(false); }}
-              className="px-3 py-2.5 sm:px-4 sm:py-3 rounded-xl flex flex-col gap-1.5 cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 aria-selected:bg-black/10 dark:bg-white/10 transition-colors outline-none mx-1 my-1"
+              className="px-3 py-2.5 sm:px-4 sm:py-3 rounded-xl flex flex-col gap-1.5 cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 aria-selected:bg-black/10 dark:aria-selected:bg-white/10 transition-colors outline-none mx-1 my-1"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

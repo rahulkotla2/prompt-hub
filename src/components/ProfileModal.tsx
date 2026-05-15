@@ -1,5 +1,5 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, User } from 'lucide-react';
 
 type ProfileModalProps = {
   isOpen: boolean;
@@ -8,6 +8,7 @@ type ProfileModalProps = {
   setProfileName: (val: string) => void;
   profileImage: string;
   setProfileImage: (val: string) => void;
+  setProfileImageFile: (val: File | null) => void;
   updateProfile: () => void;
   isProcessing: boolean;
 };
@@ -19,6 +20,7 @@ export function ProfileModal({
   setProfileName,
   profileImage,
   setProfileImage,
+  setProfileImageFile,
   updateProfile,
   isProcessing
 }: ProfileModalProps) {
@@ -41,11 +43,26 @@ export function ProfileModal({
           </div>
         
         <div className="p-4 sm:p-6 flex flex-col gap-4 sm:gap-5 overflow-y-auto min-h-0">
-          {profileImage && (
-            <div className="flex justify-center mb-2">
-              <img src={profileImage} alt="Preview" className="w-20 h-20 rounded-full object-cover border-4 border-cyan-600/30 dark:border-cyan-500/30" />
-            </div>
-          )}
+          <div className="flex flex-col items-center gap-2 mb-2">
+            {profileImage ? (
+              <>
+                <img src={profileImage} alt="Preview" className="w-20 h-20 rounded-full object-cover border-4 border-cyan-600/30 dark:border-cyan-500/30" />
+                <button 
+                  onClick={() => {
+                    setProfileImage('');
+                    setProfileImageFile(null);
+                  }}
+                  className="text-[10px] uppercase font-bold text-red-500 hover:text-red-600 tracking-wider transition-colors"
+                >
+                  Remove Picture
+                </button>
+              </>
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center">
+                <User className="w-8 h-8 text-gray-400 dark:text-white/20" />
+              </div>
+            )}
+          </div>
           
           <div className="flex flex-col gap-2">
             <label className="text-[10px] uppercase font-bold text-gray-600 dark:text-white/60 tracking-wider px-1">Display Name</label>
@@ -67,11 +84,8 @@ export function ProfileModal({
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                  const reader = new FileReader();
-                  reader.onloadend = () => {
-                    setProfileImage(reader.result as string);
-                  };
-                  reader.readAsDataURL(file);
+                  setProfileImageFile(file);
+                  setProfileImage(URL.createObjectURL(file));
                 }
               }}
               className="bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-600 dark:focus:border-cyan-400 transition-colors shadow-inner w-full text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-cyan-600/20 dark:file:bg-cyan-500/20 file:text-cyan-600 dark:file:text-cyan-400 hover:file:bg-cyan-600/30 dark:file:bg-cyan-500/30"

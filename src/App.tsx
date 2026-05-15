@@ -49,6 +49,7 @@ export default function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [profileName, setProfileName] = useState('');
   const [profileImage, setProfileImage] = useState('');
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
@@ -170,15 +171,48 @@ export default function App() {
     if (!supabase) return;
     setIsProcessing(true);
     try {
+      let avatarUrl = profileImage;
+
+      // Delete old image if it exists and the image is being changed/removed
+      const oldAvatarUrl = user?.user_metadata?.avatar_url;
+      if (oldAvatarUrl && avatarUrl !== oldAvatarUrl) {
+        if (oldAvatarUrl.includes('profile_images/')) {
+          const oldFilePath = oldAvatarUrl.split('profile_images/').pop();
+          if (oldFilePath) {
+            await supabase.storage.from('profile_images').remove([oldFilePath]);
+          }
+        }
+      }
+
+      if (profileImageFile && user) {
+        const fileExt = profileImageFile.name.split('.').pop();
+        const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('profile_images')
+          .upload(filePath, profileImageFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from('profile_images')
+          .getPublicUrl(filePath);
+
+        avatarUrl = publicUrlData.publicUrl;
+      }
+
       const { data, error } = await supabase.auth.updateUser({
-        data: { full_name: profileName, avatar_url: profileImage }
+        data: { full_name: profileName, avatar_url: avatarUrl }
       });
       if (error) throw error;
       showToast('Profile updated successfully!');
       if (data?.user) {
         setUser(data.user);
+        setProfileImage(avatarUrl);
       }
       setIsProfileOpen(false);
+      setProfileImageFile(null);
     } catch (err: any) {
       showToast(err.message, true);
     } finally {
@@ -704,6 +738,7 @@ export default function App() {
         setProfileName={setProfileName}
         profileImage={profileImage}
         setProfileImage={setProfileImage}
+        setProfileImageFile={setProfileImageFile}
         updateProfile={updateProfile}
         isProcessing={isProcessing}
       />
